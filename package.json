@@ -1,0 +1,23 @@
+{
+  "name": "first_bot",
+  "version": "0.0.1",
+  "description": "My first bot",
+  "author": "Antonster",
+  "license": "MIT",
+  "main": "./src/index.js",
+  "scripts": {
+    "start": "node ./src/index.js"
+  },
+  "engines": {
+    "node": "10.15.3"
+  },
+  "devDependencies": {
+    "eslint": "^5.16.0",
+    "eslint-config-airbnb": "^17.1.0",
+    "eslint-plugin-import": "^2.17.1"
+  },
+  "dependencies": {
+    "node-fetch": "^2.4.1",
+    "telegraf": "^3.29.0"
+  }
+}
