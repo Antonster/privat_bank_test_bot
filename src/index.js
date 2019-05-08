@@ -1,8 +1,16 @@
 const Telegraf = require('telegraf');
 const fetch = require('node-fetch');
+const session = require('telegraf/session');
+const Stage = require('telegraf/stage');
 const Markup = require('telegraf/markup');
+const { bankBranches } = require('./scenes');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
+const stage = new Stage();
+
+stage.register(bankBranches);
+bot.use(session());
+bot.use(stage.middleware());
 
 bot.start((ctx) => {
   const name = ctx.from.first_name;
@@ -14,7 +22,7 @@ bot.start((ctx) => {
 
 bot.help(ctx => ctx.reply(
   `
-    /exchange_rates - показать текущий курс валют
+  /exchange_rates - показать текущий курс валют
   `,
 ));
 
@@ -25,6 +33,8 @@ bot.command('exchange_rates', ctx => ctx.reply(
     [Markup.callbackButton('Безналичный', 'cashless')],
   ]).extra(),
 ));
+
+bot.command('bank_branches', ctx => ctx.scene.enter('bank_branches'));
 
 bot.action(['cash', 'cashless'], (ctx) => {
   const action = ctx.callbackQuery.data;
@@ -81,7 +91,7 @@ bot.action(['USD_C', 'EUR_C', 'RUR_C', 'USD_CL', 'EUR_CL', 'RUR_CL'], (ctx) => {
       `,
     ))
     .catch((err) => {
-      console.dir(err);
+      console.log(err);
       ctx.reply('Упс, что-то пошло не так. Попробуйте позже.');
     });
 });
