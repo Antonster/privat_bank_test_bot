@@ -22,7 +22,9 @@ bot.start((ctx) => {
 
 bot.help(ctx => ctx.reply(
   `
-  /exchange_rates - показать текущий курс валют
+    Команды:
+    /exchange_rates - показать текущий курс валют
+    /bank_branches - найти отделения банка
   `,
 ));
 

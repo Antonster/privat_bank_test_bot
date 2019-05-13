@@ -1,7 +1,32 @@
 const WizardScene = require('telegraf/scenes/wizard');
 const { URL } = require('url');
-const Markup = require('telegraf/markup');
 const fetch = require('node-fetch');
+
+const botMessages = {
+  city: `
+    Введите ваш город.
+    "Выйти" - отменить операцию.
+  `,
+  address: `
+    Введите название улицы.
+    "Назад" - вернуться к выбору города.
+    "Далее" - не выбирать улицу.
+    "Выйти" - отменить операцию.
+  `,
+  repeat: `
+    Хотите продолжать?
+    "Да" - повторить операцию.
+    "Нет" - закончить операцию.
+  `,
+  confirmation: `
+    Выберите действие.
+    "Да" - повторить операцию.
+    "Нет" - закончить операцию.
+  `,
+  nothingFound: 'Похоже, ничего не найдено.',
+  complete: 'Операция завершена.',
+  error: 'Упс, что-то пошло не так. Попробуйте позже.',
+};
 
 const bankBranchesData = {
   city: '',
@@ -11,49 +36,32 @@ const bankBranchesData = {
 const bankBranches = new WizardScene(
   'bank_branches',
   (ctx) => {
-    ctx.reply(
-      `
-       Введите ваш город.
-       "Выйти" - отменить операцию.
-      `,
-    );
+    ctx.reply(botMessages.city);
     return ctx.wizard.next();
   },
   (ctx) => {
-    if (ctx.message.text === 'Выйти' || ctx.message.text === 'выйти') {
-      ctx.reply('Операция отменена.');
+    if (/выйти/i.test(ctx.message.text)) {
+      ctx.reply(botMessages.complete);
       return ctx.scene.leave();
     }
 
     bankBranchesData.city = ctx.message.text;
 
-    ctx.reply(
-      `
-        Введите название улицы.
-        "Назад" - вернуться к выбору города.
-        "Далее" - не выбирать улицу.
-        "Выйти" - отменить операцию.
-      `,
-    );
+    ctx.reply(botMessages.address);
     return ctx.wizard.next();
   },
   (ctx) => {
-    if (ctx.message.text === 'Выйти' || ctx.message.text === 'выйти') {
-      ctx.reply('Операция отменена.');
+    if (/выйти/i.test(ctx.message.text)) {
+      ctx.reply(botMessages.complete);
       return ctx.scene.leave();
     }
 
-    if (ctx.message.text === 'Назад' || ctx.message.text === 'назад') {
-      ctx.reply(
-        `
-         Введите ваш город.
-         "Выйти" - отменить операцию.
-        `,
-      );
+    if (/назад/i.test(ctx.message.text)) {
+      ctx.reply(botMessages.city);
       return ctx.wizard.back();
     }
 
-    if (ctx.message.text === 'Далее' || ctx.message.text === 'далее') {
+    if (/далее/i.test(ctx.message.text)) {
       bankBranchesData.address = '';
     } else {
       bankBranchesData.address = ctx.message.text;
@@ -72,26 +80,48 @@ const bankBranches = new WizardScene(
       .then(res => res.json())
       .then((res) => {
         if (res.length === 0) {
-          ctx.reply('Похоже, ничего не найдено.');
-        }
-        for (let i = 0; i < res.length; i += 1) {
-          const item = res[i];
+          ctx.reply(botMessages.nothingFound);
+        } else {
+          for (let i = 0; i < res.length; i += 1) {
+            const item = res[i];
 
-          ctx.reply(
-            `
-              ${item.name}
-              Страна: ${item.country}
-              Город: ${item.city}
-              Адрес: ${item.address}
-              Индекс: ${item.index}
-              Телефон: ${item.phone}
-              email: ${item.email}
-            `,
-          );
+            ctx.reply(
+              `
+                ${item.name}
+                Страна: ${item.country}
+                Город: ${item.city}
+                Адрес: ${item.address}
+                Индекс: ${item.index}
+                Телефон: ${item.phone}
+                email: ${item.email}
+              `,
+            );
+          }
         }
       })
-      .catch(err => console.log(err));
-    return ctx.scene.leave();
+      .then(() => new Promise(res => setTimeout(res, 5000)))
+      .then(() => {
+        ctx.reply(botMessages.repeat);
+      })
+      .catch((err) => {
+        console.log(err);
+        ctx.reply(botMessages.error);
+      });
+    return ctx.wizard.next();
+  },
+  (ctx) => {
+    if (/да/i.test(ctx.message.text)) {
+      ctx.reply(botMessages.city);
+      return ctx.wizard.selectStep(1);
+    }
+
+    if (/нет/i.test(ctx.message.text)) {
+      ctx.reply(botMessages.complete);
+      return ctx.scene.leave();
+    }
+
+    ctx.reply(botMessages.confirmation);
+    return ctx.wizard.selectStep(3);
   },
 );
 
