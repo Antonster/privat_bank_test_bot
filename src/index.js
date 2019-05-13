@@ -3,12 +3,11 @@ const fetch = require('node-fetch');
 const session = require('telegraf/session');
 const Stage = require('telegraf/stage');
 const Markup = require('telegraf/markup');
-const { bankBranches } = require('./scenes');
+const { bankBranches, atm, bankTerminals } = require('./scenes');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
-const stage = new Stage();
+const stage = new Stage([bankBranches, atm, bankTerminals]);
 
-stage.register(bankBranches);
 bot.use(session());
 bot.use(stage.middleware());
 
@@ -24,7 +23,9 @@ bot.help(ctx => ctx.reply(
   `
     Команды:
     /exchange_rates - показать текущий курс валют
-    /bank_branches - найти отделения банка
+    /bank_branches - местоположение отделений банка
+    /atm - местоположение банкоматов
+    /bank_terminals - местоположение терминалов самообслуживания
   `,
 ));
 
@@ -37,6 +38,8 @@ bot.command('exchange_rates', ctx => ctx.reply(
 ));
 
 bot.command('bank_branches', ctx => ctx.scene.enter('bank_branches'));
+bot.command('atm', ctx => ctx.scene.enter('atm'));
+bot.command('bank_terminals', ctx => ctx.scene.enter('bank_terminals'));
 
 bot.action(['cash', 'cashless'], (ctx) => {
   const action = ctx.callbackQuery.data;

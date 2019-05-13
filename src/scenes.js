@@ -10,7 +10,6 @@ const botMessages = {
   address: `
     Введите название улицы.
     "Назад" - вернуться к выбору города.
-    "Далее" - не выбирать улицу.
     "Выйти" - отменить операцию.
   `,
   repeat: `
@@ -28,49 +27,46 @@ const botMessages = {
   error: 'Упс, что-то пошло не так. Попробуйте позже.',
 };
 
-const bankBranchesData = {
+const inputData = {
   city: '',
   address: '',
 };
 
-const bankBranches = new WizardScene(
-  'bank_branches',
-  (ctx) => {
+function firstStep(ctx) {
+  ctx.reply(botMessages.city);
+  return ctx.wizard.next();
+}
+
+function secondStep(ctx) {
+  if (/выйти/i.test(ctx.message.text)) {
+    ctx.reply(botMessages.complete);
+    return ctx.scene.leave();
+  }
+
+  inputData.city = ctx.message.text;
+
+  ctx.reply(botMessages.address);
+  return ctx.wizard.next();
+}
+
+function thirdStep(ctx, scene) {
+  if (/выйти/i.test(ctx.message.text)) {
+    ctx.reply(botMessages.complete);
+    return ctx.scene.leave();
+  }
+
+  if (/назад/i.test(ctx.message.text)) {
     ctx.reply(botMessages.city);
-    return ctx.wizard.next();
-  },
-  (ctx) => {
-    if (/выйти/i.test(ctx.message.text)) {
-      ctx.reply(botMessages.complete);
-      return ctx.scene.leave();
-    }
+    return ctx.wizard.back();
+  }
 
-    bankBranchesData.city = ctx.message.text;
+  inputData.address = ctx.message.text;
 
-    ctx.reply(botMessages.address);
-    return ctx.wizard.next();
-  },
-  (ctx) => {
-    if (/выйти/i.test(ctx.message.text)) {
-      ctx.reply(botMessages.complete);
-      return ctx.scene.leave();
-    }
-
-    if (/назад/i.test(ctx.message.text)) {
-      ctx.reply(botMessages.city);
-      return ctx.wizard.back();
-    }
-
-    if (/далее/i.test(ctx.message.text)) {
-      bankBranchesData.address = '';
-    } else {
-      bankBranchesData.address = ctx.message.text;
-    }
-
+  if (scene === 'bank_branches') {
     fetch(
       new URL(
-        `https://api.privatbank.ua/p24api/pboffice?json&city=${bankBranchesData.city}&address=${
-          bankBranchesData.address
+        `https://api.privatbank.ua/p24api/pboffice?json&city=${inputData.city}&address=${
+          inputData.address
         }`,
       ),
       {
@@ -99,7 +95,7 @@ const bankBranches = new WizardScene(
           }
         }
       })
-      .then(() => new Promise(res => setTimeout(res, 5000)))
+      .then(() => new Promise(res => setTimeout(res, 3000)))
       .then(() => {
         ctx.reply(botMessages.repeat);
       })
@@ -107,24 +103,190 @@ const bankBranches = new WizardScene(
         console.log(err);
         ctx.reply(botMessages.error);
       });
-    return ctx.wizard.next();
+  }
+
+  if (scene === 'atm') {
+    fetch(
+      new URL(
+        `https://api.privatbank.ua/p24api/infrastructure?json&atm&address=${
+          inputData.address
+        }&city=${inputData.city}`,
+      ),
+      {
+        method: 'GET',
+      },
+    )
+      .then(res => res.json())
+      .then((res) => {
+        const { devices } = res;
+
+        if (devices.length === 0) {
+          ctx.reply(botMessages.nothingFound);
+        } else {
+          for (let i = 0; i < devices.length; i += 1) {
+            const item = devices[i];
+            const {
+              mon, tue, wed, thu, fri, sat, sun, hol,
+            } = item.tw;
+            const fullData = item.fullAddressRu.split(',');
+
+            ctx.reply(
+              `
+                ${item.placeRu}
+                ${fullData[0]}
+                ${fullData[1]}
+                ${fullData[2]}
+                ${fullData[3]}
+                ${fullData[4]}
+                Время работы:
+                  Пн: ${mon}
+                  Вт: ${tue}
+                  Ср: ${wed}
+                  Чт: ${thu}
+                  Пт: ${fri}
+                  Сб: ${sat}
+                  Вс: ${sun}
+                  Праздн: ${hol}
+              `,
+            );
+          }
+        }
+      })
+      .then(() => new Promise(res => setTimeout(res, 3000)))
+      .then(() => {
+        ctx.reply(botMessages.repeat);
+      })
+      .catch((err) => {
+        console.log(err);
+        ctx.reply(botMessages.error);
+      });
+  }
+
+  if (scene === 'bank_terminals') {
+    fetch(
+      new URL(
+        `https://api.privatbank.ua/p24api/infrastructure?json&tso&address=${
+          inputData.address
+        }&city=${inputData.city}`,
+      ),
+      {
+        method: 'GET',
+      },
+    )
+      .then(res => res.json())
+      .then((res) => {
+        const { devices } = res;
+
+        if (devices.length === 0) {
+          ctx.reply(botMessages.nothingFound);
+        } else {
+          for (let i = 0; i < devices.length; i += 1) {
+            const item = devices[i];
+            const {
+              mon, tue, wed, thu, fri, sat, sun, hol,
+            } = item.tw;
+            const fullData = item.fullAddressRu.split(',');
+
+            ctx.reply(
+              `
+                ${item.placeRu}
+                ${fullData[0]}
+                ${fullData[1]}
+                ${fullData[2]}
+                ${fullData[3]}
+                ${fullData[4]}
+                Время работы:
+                  Пн: ${mon}
+                  Вт: ${tue}
+                  Ср: ${wed}
+                  Чт: ${thu}
+                  Пт: ${fri}
+                  Сб: ${sat}
+                  Вс: ${sun}
+                  Праздн: ${hol}
+              `,
+            );
+          }
+        }
+      })
+      .then(() => new Promise(res => setTimeout(res, 3000)))
+      .then(() => {
+        ctx.reply(botMessages.repeat);
+      })
+      .catch((err) => {
+        console.log(err);
+        ctx.reply(botMessages.error);
+      });
+  }
+
+  return ctx.wizard.next();
+}
+
+function fourthStep(ctx) {
+  if (/да/i.test(ctx.message.text)) {
+    ctx.reply(botMessages.city);
+    return ctx.wizard.selectStep(1);
+  }
+
+  if (/нет/i.test(ctx.message.text)) {
+    ctx.reply(botMessages.complete);
+    return ctx.scene.leave();
+  }
+
+  ctx.reply(botMessages.confirmation);
+  return ctx.wizard.selectStep(3);
+}
+
+const bankBranches = new WizardScene(
+  'bank_branches',
+  (ctx) => {
+    firstStep(ctx);
   },
   (ctx) => {
-    if (/да/i.test(ctx.message.text)) {
-      ctx.reply(botMessages.city);
-      return ctx.wizard.selectStep(1);
-    }
+    secondStep(ctx);
+  },
+  (ctx) => {
+    thirdStep(ctx, 'bank_branches');
+  },
+  (ctx) => {
+    fourthStep(ctx);
+  },
+);
 
-    if (/нет/i.test(ctx.message.text)) {
-      ctx.reply(botMessages.complete);
-      return ctx.scene.leave();
-    }
+const atm = new WizardScene(
+  'atm',
+  (ctx) => {
+    firstStep(ctx);
+  },
+  (ctx) => {
+    secondStep(ctx);
+  },
+  (ctx) => {
+    thirdStep(ctx, 'atm');
+  },
+  (ctx) => {
+    fourthStep(ctx);
+  },
+);
 
-    ctx.reply(botMessages.confirmation);
-    return ctx.wizard.selectStep(3);
+const bankTerminals = new WizardScene(
+  'bank_terminals',
+  (ctx) => {
+    firstStep(ctx);
+  },
+  (ctx) => {
+    secondStep(ctx);
+  },
+  (ctx) => {
+    thirdStep(ctx, 'bank_terminals');
+  },
+  (ctx) => {
+    fourthStep(ctx);
   },
 );
 
 module.exports = {
   bankBranches,
+  atm,
+  bankTerminals,
 };
