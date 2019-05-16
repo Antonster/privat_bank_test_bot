@@ -38,7 +38,7 @@ function firstStep(ctx) {
 }
 
 function secondStep(ctx) {
-  if (/выйти/i.test(ctx.message.text)) {
+  if (/^выйти$/i.test(ctx.message.text)) {
     ctx.reply(botMessages.complete);
     return ctx.scene.leave();
   }
@@ -50,12 +50,12 @@ function secondStep(ctx) {
 }
 
 function thirdStep(ctx, scene) {
-  if (/выйти/i.test(ctx.message.text)) {
+  if (/^выйти$/i.test(ctx.message.text)) {
     ctx.reply(botMessages.complete);
     return ctx.scene.leave();
   }
 
-  if (/назад/i.test(ctx.message.text)) {
+  if (/^назад$/i.test(ctx.message.text)) {
     ctx.reply(botMessages.city);
     return ctx.wizard.back();
   }
@@ -223,12 +223,12 @@ function thirdStep(ctx, scene) {
 }
 
 function fourthStep(ctx) {
-  if (/да/i.test(ctx.message.text)) {
+  if (/^да$/i.test(ctx.message.text)) {
     ctx.reply(botMessages.city);
     return ctx.wizard.selectStep(1);
   }
 
-  if (/нет/i.test(ctx.message.text)) {
+  if (/^нет$/i.test(ctx.message.text)) {
     ctx.reply(botMessages.complete);
     return ctx.scene.leave();
   }
