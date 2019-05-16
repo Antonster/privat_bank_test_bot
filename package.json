@@ -1,7 +1,7 @@
 {
-  "name": "first_bot",
+  "name": "privat_bank_test_bot",
   "version": "0.0.1",
-  "description": "My first bot",
+  "description": "",
   "author": "Antonster",
   "license": "MIT",
   "main": "./src/index.js",
